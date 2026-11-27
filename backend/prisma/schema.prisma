@@ -23,9 +23,12 @@ model User {
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  userRoles UserRole[]
-  patient   Patient?
-  doctor    Doctor?
+  userRoles                UserRole[]
+  patient                  Patient?
+  doctor                   Doctor?
+  uploadedMedicalDocuments MedicalDocument[]
+  auditLogs                AuditLog[]
+  notifications            Notification[]
 
   @@map("users")
 }
@@ -67,7 +70,11 @@ model Patient {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user             User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  appointments     Appointment[]
+  medicalRecords   MedicalRecord[]
+  prescriptions    Prescription[]
+  medicalDocuments MedicalDocument[]
 
   @@map("patients")
 }
@@ -104,9 +111,12 @@ model Doctor {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  user       User             @relation(fields: [userId], references: [id], onDelete: Restrict)
-  department Department       @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  schedules  DoctorSchedule[]
+  user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  department     Department       @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  schedules      DoctorSchedule[]
+  appointments   Appointment[]
+  medicalRecords MedicalRecord[]
+  prescriptions  Prescription[]
 
   @@index([departmentId])
   @@map("doctors")
@@ -132,6 +142,180 @@ model DoctorSchedule {
 }
 
 // ==========================================
+// APPOINTMENT MANAGEMENT
+// ==========================================
+
+model Appointment {
+  id        Int               @id @default(autoincrement())
+  patientId Int               @map("patient_id")
+  doctorId  Int               @map("doctor_id")
+  startAt   DateTime          @map("start_at")
+  endAt     DateTime          @map("end_at")
+  status    AppointmentStatus @default(PENDING)
+  reason    String?           @db.Text
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  patient       Patient        @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  doctor        Doctor         @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  medicalRecord MedicalRecord?
+
+  @@index([patientId, startAt])
+  @@index([doctorId, startAt, endAt])
+  @@map("appointments")
+}
+
+// ==========================================
+// MEDICAL RECORD MANAGEMENT
+// ==========================================
+
+model MedicalRecord {
+  id            Int               @id @default(autoincrement())
+  patientId     Int               @map("patient_id")
+  doctorId      Int               @map("doctor_id")
+  appointmentId Int?              @unique @map("appointment_id")
+  recordType    MedicalRecordType @default(CONSULTATION) @map("record_type")
+  title         String            @db.VarChar(200)
+  description   String?           @db.Text
+  clinicalNotes String?           @map("clinical_notes") @db.Text
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  patient       Patient        @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  doctor        Doctor         @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  appointment   Appointment?   @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  diagnoses     Diagnosis[]
+  prescriptions Prescription[]
+
+  @@index([patientId, createdAt])
+  @@index([doctorId])
+  @@map("medical_records")
+}
+
+// ==========================================
+// DIAGNOSIS MANAGEMENT
+// ==========================================
+
+model Diagnosis {
+  id              Int      @id @default(autoincrement())
+  medicalRecordId Int      @map("medical_record_id")
+  diagnosisName   String   @map("diagnosis_name") @db.VarChar(200)
+  description     String?  @db.Text
+  diagnosedAt     DateTime @default(now()) @map("diagnosed_at")
+
+  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Restrict)
+
+  @@index([medicalRecordId])
+  @@map("diagnoses")
+}
+
+// ==========================================
+// PRESCRIPTION MANAGEMENT
+// ==========================================
+
+model Prescription {
+  id              Int      @id @default(autoincrement())
+  medicalRecordId Int      @map("medical_record_id")
+  doctorId        Int      @map("doctor_id")
+  patientId       Int      @map("patient_id")
+  instructions    String?  @db.Text
+  issuedAt        DateTime @default(now()) @map("issued_at")
+
+  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Restrict)
+  doctor        Doctor        @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  patient       Patient       @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  items         PrescriptionItem[]
+
+  @@index([patientId, issuedAt])
+  @@map("prescriptions")
+}
+
+// ==========================================
+// PRESCRIPTION ITEM MANAGEMENT
+// ==========================================
+
+model PrescriptionItem {
+  id             Int      @id @default(autoincrement())
+  prescriptionId Int      @map("prescription_id")
+  medicationName String   @map("medication_name") @db.VarChar(200)
+  dosage         String   @db.VarChar(100)
+  frequency      String   @db.VarChar(100)
+  duration       String   @db.VarChar(100)
+  instructions   String?  @db.Text
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Restrict)
+
+  @@index([prescriptionId])
+  @@map("prescription_items")
+}
+
+// ==========================================
+// MEDICAL DOCUMENT MANAGEMENT
+// ==========================================
+
+model MedicalDocument {
+  id               Int                 @id @default(autoincrement())
+  patientId        Int                 @map("patient_id")
+  uploadedByUserId Int                 @map("uploaded_by_user_id")
+  documentType     MedicalDocumentType @map("document_type")
+  title            String              @db.VarChar(200)
+  originalName     String              @map("original_name") @db.VarChar(255)
+  storedName       String              @unique @map("stored_name") @db.VarChar(255)
+  mimeType         String              @map("mime_type") @db.VarChar(100)
+  fileSize         Int                 @map("file_size")
+  createdAt        DateTime            @default(now()) @map("created_at")
+
+  patient    Patient @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  uploadedBy User    @relation(fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([patientId, createdAt])
+  @@index([uploadedByUserId])
+  @@map("medical_documents")
+}
+
+// ==========================================
+// AUDIT LOG MANAGEMENT
+// ==========================================
+
+model AuditLog {
+  id          Int         @id @default(autoincrement())
+  userId      Int?        @map("user_id")
+  action      AuditAction
+  entity      String      @db.VarChar(100)
+  entityId    String?     @map("entity_id") @db.VarChar(100)
+  description String?     @db.Text
+  ipAddress   String?     @map("ip_address") @db.VarChar(45)
+  userAgent   String?     @map("user_agent") @db.VarChar(500)
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([entity, entityId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+// ==========================================
+// NOTIFICATION MANAGEMENT
+// ==========================================
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int              @map("user_id")
+  title     String           @db.VarChar(200)
+  message   String           @db.Text
+  type      NotificationType @default(GENERAL)
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
+}
+
+// ==========================================
 // ENUMS
 // ==========================================
 
@@ -147,4 +331,49 @@ enum RoleName {
   PATIENT
   RECEPTIONIST
   HEALTHCARE_STAFF
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum MedicalRecordType {
+  CONSULTATION
+  DIAGNOSIS
+  LAB_REPORT
+  PRESCRIPTION
+  OTHER
+}
+
+enum MedicalDocumentType {
+  LAB_REPORT
+  SCAN_REPORT
+  PRESCRIPTION
+  REFERRAL_LETTER
+  DISCHARGE_SUMMARY
+  OTHER
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  DOWNLOAD
+  ACCESS_DENIED
+}
+
+enum NotificationType {
+  APPOINTMENT_BOOKED
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_RESCHEDULED
+  APPOINTMENT_REMINDER
+  GENERAL
 }

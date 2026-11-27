@@ -4,13 +4,36 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 
+
 import { prisma } from "./lib/prisma";
 import authRoutes from "./modules/auth/auth.routes";
+import adminRoutes from "./modules/admin/admin.routes";
+import doctorRoutes from "./modules/doctors/doctor.routes";
+import departmentRoutes from "./modules/departments/department.routes";
+import patientRoutes from "./modules/patients/patient.routes";
+import appointmentRoutes from "./modules/appointments/appointment.routes";
+import medicalRecordRoutes from "./modules/medical-records/medical-record.routes";
+import diagnosisRoutes from "./modules/diagnoses/diagnosis.routes";
+import prescriptionRoutes from "./modules/prescriptions/prescription.routes";
+import medicalDocumentRoutes from "./modules/medical-documents/document.routes";
+import auditRoutes from "./modules/audit/audit.routes";
+import notificationRoutes from "./modules/notifications/notification.routes";
 
 const app = express();
 
 // Security middleware
 app.use(helmet());
+app.use("/api/admin", adminRoutes);
+app.use("/api/doctors", doctorRoutes);
+app.use("/api/departments", departmentRoutes);
+app.use("/api/patients", patientRoutes);
+app.use("/api/appointments", appointmentRoutes);
+app.use("/api/medical-records", medicalRecordRoutes);
+app.use("/api/diagnoses", diagnosisRoutes);
+app.use("/api/prescriptions", prescriptionRoutes);
+app.use("/api/medical-documents", medicalDocumentRoutes);
+app.use("/api/audit-logs", auditRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // CORS configuration
 app.use(
@@ -56,5 +79,7 @@ app.get("/api/health", async (_req, res) => {
 
 // Authentication routes
 app.use("/api/auth", authRoutes);
+
+app.use(express.json());
 
 export default app;
