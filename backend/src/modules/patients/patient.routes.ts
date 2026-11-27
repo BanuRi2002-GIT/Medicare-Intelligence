@@ -23,4 +23,9 @@ router.patch("/me", updateMyPatientProfile);
 
 router.get("/me/medical-history", getMyMedicalHistory);
 
+router.patch("/me", updateMyPatientProfile);
+
+router.use(authenticate);
+router.use(authorize("PATIENT"));
+
 export default router;

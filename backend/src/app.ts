@@ -18,6 +18,14 @@ import prescriptionRoutes from "./modules/prescriptions/prescription.routes";
 import medicalDocumentRoutes from "./modules/medical-documents/document.routes";
 import auditRoutes from "./modules/audit/audit.routes";
 import notificationRoutes from "./modules/notifications/notification.routes";
+import scheduleRoutes from "./modules/schedules/schedule.routes";
+import availabilityRoutes from "./modules/availability/availability.routes";
+import doctorLeaveRoutes from "./modules/doctor-leaves/leave.routes";
+import patientHealthRoutes from "./modules/patients/patient-health.routes";
+import receptionistRoutes from "./modules/receptionist/receptionist.routes";
+import receptionistAppointmentRoutes
+  from "./modules/receptionist/receptionist-appointment.routes";
+import receptionistDashboardRoutes from "./modules/receptionist/receptionist-dashboard.routes";
 
 const app = express();
 
@@ -34,6 +42,16 @@ app.use("/api/prescriptions", prescriptionRoutes);
 app.use("/api/medical-documents", medicalDocumentRoutes);
 app.use("/api/audit-logs", auditRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/schedules", scheduleRoutes);
+app.use("/api/availability", availabilityRoutes);
+app.use("/api/doctor-leaves", doctorLeaveRoutes);
+app.use("/api/patient-health", patientHealthRoutes);
+app.use("/api/receptionist", receptionistRoutes);
+app.use(
+  "/api/receptionist/appointments",
+  receptionistAppointmentRoutes
+);
+app.use("/api/receptionist/dashboard", receptionistDashboardRoutes);
 
 // CORS configuration
 app.use(

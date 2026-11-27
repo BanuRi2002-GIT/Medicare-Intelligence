@@ -1,6 +1,11 @@
+
 import type { Response } from "express";
 import { prisma } from "../../lib/prisma";
 import type { AuthenticatedRequest } from "../../middlewares/auth.types";
+
+// ==========================================
+// 1. GET MY NOTIFICATIONS
+// ==========================================
 
 export async function getMyNotifications(
   req: AuthenticatedRequest,
@@ -28,6 +33,7 @@ export async function getMyNotifications(
       success: true,
       data: notifications,
     });
+
   } catch (error) {
     console.error("GET NOTIFICATIONS ERROR:", error);
 
@@ -37,6 +43,10 @@ export async function getMyNotifications(
     });
   }
 }
+
+// ==========================================
+// 2. MARK NOTIFICATION AS READ
+// ==========================================
 
 export async function markNotificationAsRead(
   req: AuthenticatedRequest,
@@ -80,6 +90,7 @@ export async function markNotificationAsRead(
       success: true,
       message: "Notification marked as read",
     });
+
   } catch (error) {
     console.error("MARK NOTIFICATION ERROR:", error);
 

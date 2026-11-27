@@ -12,6 +12,18 @@ import {
   authorize,
 } from "../../middlewares/auth.middleware";
 
+import {
+  getPatientConsultationHistory,
+} from "./consultation-history.controller";
+
+import {
+  getConsultationDetails,
+} from "./consultation-details.controller";
+
+import {
+  getMyMedicalTimeline,
+} from "../patients/patient-timeline.controller";
+
 const router = Router();
 
 router.use(authenticate);
@@ -35,6 +47,24 @@ router.get(
   "/doctor/my",
   authorize("DOCTOR"),
   getMyCreatedRecords
+);
+
+router.get(
+  "/patient/:patientId/consultations",
+  authorize("DOCTOR"),
+  getPatientConsultationHistory
+);
+
+router.get(
+  "/consultation/:recordId/details",
+  authorize("DOCTOR"),
+  getConsultationDetails
+);
+
+router.get(
+  "/my/timeline",
+  authorize("PATIENT"),
+  getMyMedicalTimeline
 );
 
 export default router;

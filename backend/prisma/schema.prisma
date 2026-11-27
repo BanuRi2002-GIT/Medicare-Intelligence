@@ -76,7 +76,52 @@ model Patient {
   prescriptions    Prescription[]
   medicalDocuments MedicalDocument[]
 
+  // Patient health information
+  allergies        PatientAllergy[]
+  conditions       PatientCondition[]
+
   @@map("patients")
+}
+
+// ==========================================
+// PATIENT ALLERGY MANAGEMENT
+// ==========================================
+
+model PatientAllergy {
+  id        Int      @id @default(autoincrement())
+  patientId Int      @map("patient_id")
+  allergen  String   @db.VarChar(191)
+  reaction  String?  @db.VarChar(500)
+  severity  String?  @db.VarChar(30)
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@index([patientId])
+  @@map("patient_allergies")
+}
+
+// ==========================================
+// PATIENT MEDICAL CONDITION MANAGEMENT
+// ==========================================
+
+model PatientCondition {
+  id            Int       @id @default(autoincrement())
+  patientId     Int       @map("patient_id")
+  conditionName String    @map("condition_name") @db.VarChar(191)
+  description   String?   @db.Text
+  diagnosedAt   DateTime? @map("diagnosed_at")
+  status        String    @default("ACTIVE") @db.VarChar(30)
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@index([patientId])
+  @@map("patient_conditions")
 }
 
 // ==========================================
@@ -114,6 +159,7 @@ model Doctor {
   user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
   department     Department       @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   schedules      DoctorSchedule[]
+  leaves         DoctorLeave[]
   appointments   Appointment[]
   medicalRecords MedicalRecord[]
   prescriptions  Prescription[]
@@ -139,6 +185,24 @@ model DoctorSchedule {
 
   @@index([doctorId, dayOfWeek])
   @@map("doctor_schedules")
+}
+
+// ==========================================
+// DOCTOR LEAVE MANAGEMENT
+// ==========================================
+
+model DoctorLeave {
+  id        Int      @id @default(autoincrement())
+  doctorId  Int      @map("doctor_id")
+  leaveDate DateTime @map("leave_date") @db.Date
+  reason    String?  @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+
+  @@unique([doctorId, leaveDate])
+  @@index([leaveDate])
+  @@map("doctor_leaves")
 }
 
 // ==========================================
@@ -338,6 +402,7 @@ enum AppointmentStatus {
   CONFIRMED
   COMPLETED
   CANCELLED
+  REJECTED
   NO_SHOW
 }
 
@@ -375,5 +440,6 @@ enum NotificationType {
   APPOINTMENT_CANCELLED
   APPOINTMENT_RESCHEDULED
   APPOINTMENT_REMINDER
+  APPOINTMENT_REJECTED
   GENERAL
 }

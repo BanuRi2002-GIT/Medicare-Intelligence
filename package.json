@@ -7,9 +7,6 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
     "tsx": "^4.23.15"
-  },
-  "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "worker": "tsx watch src/notification-worker.ts"
   }
+  
 }
